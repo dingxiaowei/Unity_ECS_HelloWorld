@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;
+using UnityEngine.Jobs;
 
 public class Testing : MonoBehaviour
 {
@@ -43,33 +44,45 @@ public class Testing : MonoBehaviour
         float startTime = Time.realtimeSinceStartup;
         if (useJobs)
         {
-            NativeArray<float3> positionArray = new NativeArray<float3>(zombieList.Count, Allocator.TempJob);
+            //NativeArray<float3> positionArray = new NativeArray<float3>(zombieList.Count, Allocator.TempJob);
             NativeArray<float> moveYArray = new NativeArray<float>(zombieList.Count, Allocator.TempJob);
-
+            TransformAccessArray transformAccessArray = new TransformAccessArray(zombieList.Count);
             for (int i = 0; i < zombieList.Count; i++)
             {
-                positionArray[i] = zombieList[i].transform.position;
+                //positionArray[i] = zombieList[i].transform.position;
                 moveYArray[i] = zombieList[i].moveY;
+                transformAccessArray.Add(zombieList[i].transform);
             }
 
+            /*
             var reallyToughParallelJob = new ReallyTouchParallelJob
             {
                 deltime = Time.deltaTime,
                 positionArray = positionArray,
                 moveYArray = moveYArray
             };
+            */
 
-            var jobHandle = reallyToughParallelJob.Schedule(zombieList.Count, 100);
+            var reallyToughParallelJobTransforms = new ReallyToughParllelJobTransforms
+            {
+                deltime = Time.deltaTime,
+                moveYArray = moveYArray
+            };
+            var jobHandle = reallyToughParallelJobTransforms.Schedule(transformAccessArray);
             jobHandle.Complete();
+
+            //var jobHandle = reallyToughParallelJob.Schedule(zombieList.Count, 100);
+            //jobHandle.Complete();
 
             for (int i = 0; i < zombieList.Count; i++)
             {
-                zombieList[i].transform.position = positionArray[i];
+                //zombieList[i].transform.position = positionArray[i];
                 zombieList[i].moveY = moveYArray[i];
             }
 
-            positionArray.Dispose();
+            //positionArray.Dispose();
             moveYArray.Dispose();
+            transformAccessArray.Dispose();
         }
         else
         {
@@ -138,7 +151,7 @@ public struct ReallyToughJob : IJob
     }
 }
 
-
+[BurstCompile]
 public struct ReallyTouchParallelJob : IJobParallelFor
 {
     public NativeArray<float3> positionArray;
@@ -157,10 +170,36 @@ public struct ReallyTouchParallelJob : IJobParallelFor
         {
             moveYArray[index] += math.abs(moveYArray[index]);
         }
-        //float value = 0f;
-        //for (int i = 0; i < 1000; i++)
-        //{
-        //    value = math.exp10(math.sqrt(value));
-        //}
+        float value = 0f;
+        for (int i = 0; i < 1000; i++)
+        {
+            value = math.exp10(math.sqrt(value));
+        }
+    }
+}
+
+
+[BurstCompile]
+public struct ReallyToughParllelJobTransforms : IJobParallelForTransform
+{
+    public NativeArray<float> moveYArray;
+    [ReadOnly]
+    public float deltime;
+    public void Execute(int index, TransformAccess transform)
+    {
+        transform.position += new Vector3(0, moveYArray[index] * deltime, 0f);
+        if (transform.position.y > 5f)
+        {
+            moveYArray[index] = -math.abs(moveYArray[index]);
+        }
+        if (transform.position.y < -5f)
+        {
+            moveYArray[index] += math.abs(moveYArray[index]);
+        }
+        float value = 0f;
+        for (int i = 0; i < 1000; i++)
+        {
+            value = math.exp10(math.sqrt(value));
+        }
     }
 }
