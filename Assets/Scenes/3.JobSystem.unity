@@ -216,8 +216,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6323aedc4b4fd04689a0fce6f9e87b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useJobs: 0
+  useJobs: 1
   count: 100
+  zombieCount: 1000
+  pfZombie: {fileID: 2407991758500648966, guid: 553618e33d23db44c827a11f7c8552a7,
+    type: 3}
 --- !u!1 &1478797311
 GameObject:
   m_ObjectHideFlags: 0
