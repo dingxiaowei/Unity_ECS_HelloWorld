@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Collections;
+using Unity.Burst;
 
 public class Testing : MonoBehaviour
 {
@@ -53,9 +54,9 @@ public class Testing : MonoBehaviour
     }
 }
 
+[BurstCompile]
 public struct ReallyToughJob : IJob
 {
-    //public float something;
     public void Execute()
     {
         float value = 0f;
