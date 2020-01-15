@@ -2,44 +2,46 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Jobs;
 
-public class SpawnCubeSystem : ComponentSystem
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+public class SpawCubeSystem : JobComponentSystem
 {
-    private EntityManager manager;
-    private bool isSpawnCompleted;
+    private BeginInitializationEntityCommandBufferSystem m_EntityCommandBufferSystem;
+
     protected override void OnCreate()
     {
-        base.OnCreate();
-        manager = World.Active.EntityManager;
-        isSpawnCompleted = false;
+        m_EntityCommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
-    protected override void OnUpdate()
+    struct SpawnCubeJob : IJobForEachWithEntity<SpawnCubeComponent, LocalToWorld>
     {
-        if (!isSpawnCompleted)
+        public EntityCommandBuffer.Concurrent CommandBuffer;
+        public void Execute(Entity entity, int index, [ReadOnly]ref SpawnCubeComponent spawnCubeComponent, [ReadOnly]ref LocalToWorld location)
         {
-            Entities.ForEach((ref SpawnCubeComponent spawnCubeComponent) =>
+            for (var i = 0; i < spawnCubeComponent.row; i++)
             {
-                var row = spawnCubeComponent.row;
-                var colum = spawnCubeComponent.colum;
-                using (NativeArray<Entity> entities =
-                    new NativeArray<Entity>(row * colum, Allocator.Temp, NativeArrayOptions.UninitializedMemory))
+                for (int j = 0; j < spawnCubeComponent.colum; j++)
                 {
-                    manager.Instantiate(spawnCubeComponent.prefab, entities);
-                    for (int i = 0; i < row; i++)
+                    var instance = CommandBuffer.Instantiate(index, spawnCubeComponent.prefab);
+                    CommandBuffer.SetComponent(index, instance, new Translation()
                     {
-                        for (int j = 0; j < colum; j++)
-                        {
-                            int index = i + j * colum;
-                            manager.SetComponentData(entities[index], new Translation()
-                            {
-                                Value = new float3(i, 0, j)
-                            });
-                        }
-                    }
+                        Value = new float3(i, 0, j)
+                    });
                 }
-                isSpawnCompleted = true;
-            });
+            }
+            CommandBuffer.DestroyEntity(index, entity);
         }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new SpawnCubeJob()
+        {
+            CommandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer().ToConcurrent()
+        }.Schedule(this, inputDeps);
+
+        m_EntityCommandBufferSystem.AddJobHandleForProducer(job);
+        return job;
     }
 }

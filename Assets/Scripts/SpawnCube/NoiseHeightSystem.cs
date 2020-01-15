@@ -4,20 +4,30 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Collections;
 
-public class NoiseHeightSystem : ComponentSystem
+public class NoiseHeightSystem : JobComponentSystem
 {
-    protected override void OnUpdate()
+    struct TranslationNoise : IJobForEach<NoiseHeightComponent, Translation>
     {
-        var time = Time.realtimeSinceStartup;
-        Entities.ForEach((ref Translation translation, ref NoiseHeightComponent noiseHeightComponent) =>
+        public float time;
+
+        public void Execute([ReadOnly]ref NoiseHeightComponent noiseHeightComponent, ref Translation translation)
         {
             var waveFactor = noiseHeightComponent.waveFactor;
             var sampleFactor = noiseHeightComponent.sampleFactor;
+            translation.Value.y =
+                waveFactor * noise.snoise(new float2(time + sampleFactor * translation.Value.x, time + sampleFactor * translation.Value.z));
+        }
+    }
 
-            translation.Value.y = waveFactor * noise.snoise(new float2(time + sampleFactor * translation.Value.x,
-                                      time + sampleFactor * translation.Value.z));
-        });
-
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new TranslationNoise()
+        {
+            time = Time.realtimeSinceStartup
+        };
+        return job.Schedule(this, inputDeps);
     }
 }
