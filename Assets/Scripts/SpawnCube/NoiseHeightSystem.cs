@@ -1,14 +1,14 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using Unity.Collections;
 using Unity.Entities;
-using Unity.Transforms;
-using Unity.Mathematics;
 using Unity.Jobs;
-using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Transforms;
+using UnityEngine;
+using Unity.Burst;
 
 public class NoiseHeightSystem : JobComponentSystem
 {
+    [BurstCompile]
     struct TranslationNoise : IJobForEach<NoiseHeightComponent, Translation>
     {
         public float time;

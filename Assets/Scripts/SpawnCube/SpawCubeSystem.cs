@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
+using Unity.Burst;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public class SpawCubeSystem : JobComponentSystem
@@ -14,6 +15,7 @@ public class SpawCubeSystem : JobComponentSystem
         m_EntityCommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
+    [BurstCompile]
     struct SpawnCubeJob : IJobForEachWithEntity<SpawnCubeComponent, LocalToWorld>
     {
         public EntityCommandBuffer.Concurrent CommandBuffer;
