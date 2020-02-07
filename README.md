@@ -262,3 +262,13 @@ Entity go = manager.Instantiate(entity);
 * GPU Instancing是不待裁剪的，并且需要每帧在Update里调用，这样会产生额外的开销，即使物体不发生位置或者属性变化都需要强制刷新。
 * 建议使用CommandBuffer来渲染GPU Instancing，这样只有当物体位置或者属性发声改变再新型
 * 强制刷新。
+
+##### BatchRendererGroup
+![](效果图/33.png)
+
+## GPU Instancing烘焙贴图
+* Lightmap红配贴图需要用到UV2
+* UV1是Mesh从自身贴图中采样，UV2则是Mesh从Lightmap烘焙贴图采样，最后在PS里将烘焙颜色叠加在一起，Mesh就能显示烘焙样色了。
+* 如果常经理大量相同的网格，但是由于红配后UV2不同，这样网格就不相同了，将大量占内存。
+* 所以Unity采用的方式是模型导入Unity后会统一生成相同的UV2，每个Rnederer组件需要制定Lightmap的贴图ID以及Vector4偏移量，这个偏移量需要传入shader中，GPU中根据UV2加上偏移量后再去Lightmap中采样颜色。
+* 这样做完网格都可以大量重用，知识每个Renderer组件增加一个id和一个vector4。
